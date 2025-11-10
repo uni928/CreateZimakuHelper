@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>字幕入れ（IndexedDB自動保存）</title>
+<style>
+  :root{
+    --bg:#0f1226; --glass:rgba(255,255,255,.08); --card:rgba(255,255,255,.10); --text:#e9ecf1;
+    --muted:#9aa3b2; --brand:#7c5cff; --brand-2:#2dd4bf; --danger:#ef4444; --ok:#22c55e;
+    --border:rgba(255,255,255,.14); --shadow:0 10px 30px rgba(0,0,0,.5);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; color:var(--text); font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Hiragino Kaku Gothic ProN", "Noto Sans JP", Meiryo, sans-serif;
+    background: radial-gradient(1200px 800px at 10% -10%, #1d1f4b 0%, #0f1226 40%, #0b0e1c 100%) fixed;
+  }
+  .wrap{max-width:1100px; margin:32px auto; padding:0 16px}
+  header{
+    display:flex; align-items:center; gap:12px; margin-bottom:16px
+  }
+  .logo{
+    width:42px; height:42px; border-radius:12px; background:linear-gradient(135deg,var(--brand),var(--brand-2));
+    box-shadow:var(--shadow); display:grid; place-items:center; font-weight:800; letter-spacing:1px
+  }
+  .h1{font-size: clamp(22px, 2.6vw, 32px); font-weight:800; letter-spacing:.2px}
+  .sub{color:var(--muted); font-size:13px}
+
+  .grid{display:grid; grid-template-columns: 1.2fr .8fr; gap:16px}
+  @media (max-width: 960px){.grid{grid-template-columns:1fr}}
+
+  .panel{background:var(--card); border:1px solid var(--border); border-radius:18px; box-shadow:var(--shadow)}
+  .panel .hd{display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border-bottom:1px solid var(--border); background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,0)); border-top-left-radius:18px; border-top-right-radius:18px}
+  .panel .hd h2{margin:0; font-size:14px; font-weight:700; letter-spacing:.3px; text-transform:uppercase; color:#d9defa}
+  .panel .bd{padding:14px}
+  .panel .ft{padding:10px 14px; border-top:1px solid var(--border); display:flex; gap:8px; flex-wrap:wrap}
+
+  .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+  .grow{flex:1}
+  label{font-size:12px; color:var(--muted)}
+
+  input[type="file"], input[type="text"], textarea, select{
+    background:var(--glass); color:var(--text); border:1px solid var(--border); border-radius:12px; padding:10px 12px; outline:none; width:100%;
+  }
+  input[type="text"]::placeholder, textarea::placeholder{color:#98a1b3}
+
+  button{
+    appearance:none; border:none; background:linear-gradient(180deg, rgba(255,255,255,.1), rgba(255,255,255,.02));
+    color:var(--text); border:1px solid var(--border); padding:10px 14px; border-radius:12px; cursor:pointer; font-weight:700; letter-spacing:.2px;
+    transition: transform .08s ease, box-shadow .2s ease, border-color .2s ease; box-shadow: var(--shadow)
+  }
+  button:hover{transform:translateY(-1px); border-color: rgba(255,255,255,.35)}
+  button:active{transform:translateY(0)}
+  .btn-brand{background:linear-gradient(135deg, rgba(124,92,255,.9), rgba(45,212,191,.85)); border:none}
+  .btn-danger{background:linear-gradient(180deg, rgba(239,68,68,.85), rgba(239,68,68,.6)); border:none}
+  .btn-ghost{background:var(--glass)}
+  .chip{display:inline-flex; align-items:center; gap:8px; font-variant-numeric: tabular-nums; padding:6px 10px; border-radius:999px; background:var(--glass); border:1px solid var(--border)}
+
+  video{width:100%; max-height:60vh; border-bottom-left-radius:18px; border-bottom-right-radius:18px}
+
+  .timebar{display:flex; align-items:center; gap:10px; color:#d3d9e8; font-variant-numeric: tabular-nums}
+  .list{display:grid; gap:8px; max-height:60vh; overflow:auto; padding-right:4px}
+  .item{
+    background:rgba(255,255,255,.06); border:1px solid var(--border); border-radius:14px; padding:10px 12px; display:flex; gap:10px; align-items:center; cursor:pointer;
+  }
+  .item:hover{border-color:rgba(255,255,255,.3)}
+  .item.selected{outline: 2px solid var(--brand); background:linear-gradient(180deg, rgba(124,92,255,.22), rgba(255,255,255,.04))}
+  .item .idx{width:28px; height:28px; border-radius:10px; display:grid; place-items:center; background:var(--glass); border:1px solid var(--border); font-weight:800; color:#cdd6ff}
+  .times{font-variant-numeric: tabular-nums; color:#dfe6ff; font-weight:700}
+  .text{flex:1}
+  .text[contenteditable="true"]{outline:none; border-bottom:1px dashed rgba(255,255,255,.25)}
+  .pill{font-size:12px; padding:3px 8px; border-radius:999px; background:rgba(255,255,255,.06); border:1px solid var(--border); color:#c7d2fe}
+  .empty{color:#a8b0c3; padding:12px; text-align:center}
+
+  .tips{font-size:12px; color:#aeb7c9}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="logo">SS</div>
+      <div>
+        <div class="h1">字幕入れ（Single HTML・IndexedDB 自動保存）</div>
+        <div class="sub">動画を再生しながら、ワンクリックで <b>開始</b> と <b>末尾</b> を記録。ページを閉じても自動で保存・復元されます。</div>
+      </div>
+    </header>
+
+    <div class="grid">
+      <!-- Left: Video -->
+      <section class="panel" id="videoPanel">
+        <div class="hd">
+          <h2>Video</h2>
+          <div class="chip"><span>現在時刻</span><b id="cur">00:00:00</b></div>
+        </div>
+        <div class="bd">
+          <div class="row" style="margin-bottom:10px">
+            <label>動画ファイルを選択</label>
+            <input class="grow" type="file" id="videoFile" accept="video/*">
+            <button class="btn-ghost" id="playPause">▶ 再生</button>
+            <button class="btn-ghost" id="back1">⏪ -1s</button>
+            <button class="btn-ghost" id="fwd1">⏩ +1s</button>
+          </div>
+          <video id="player" controls crossorigin="anonymous"></video>
+          <div class="row" style="margin-top:10px; justify-content:space-between">
+            <div class="timebar">
+              <span class="pill">長さ <b id="dur">--:--:--</b></span>
+              <span class="pill">選択 <b id="selInfo">—</b></span>
+            </div>
+            <div class="row">
+              <button id="markIn" class="btn-brand">挿入（開始）</button>
+              <button id="markOut" title="選択中の字幕の末尾を現在時刻に" class="btn-ghost">末尾を設定</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right: Subtitle list -->
+      <section class="panel">
+        <div class="hd">
+          <h2>Subtitles</h2>
+          <div class="row">
+            <button id="exportSRT" class="btn-ghost">.srt をダウンロード</button>
+            <button id="exportVTT" class="btn-ghost">.vtt をダウンロード</button>
+            <button id="clearAll" class="btn-danger">全消去</button>
+          </div>
+        </div>
+        <div class="bd">
+          <div class="row" style="margin-bottom:10px">
+            <input id="text" class="grow" type="text" placeholder="ここに字幕テキストを入力して『挿入（開始）』を押す" />
+          </div>
+          <div id="list" class="list" aria-live="polite"></div>
+          <div id="empty" class="empty">まだ項目がありません。動画を再生し、入れたいタイミングで『挿入（開始）』を押してください。</div>
+        </div>
+        <div class="ft">
+          <button id="up">↑ 上へ</button>
+          <button id="down">↓ 下へ</button>
+          <button id="delete" class="btn-danger">削除</button>
+        </div>
+      </section>
+    </div>
+
+    <p class="tips">Tips: 項目をクリックすると選択・シークします。ダブルクリックで字幕テキストを直接編集できます。未設定の末尾は <b>X:XX:XX</b> と表示されます。</p>
+  </div>
+
+<script>
+// ===== Utilities =====
+const $ = (s, el=document)=>el.querySelector(s);
+const $$ = (s, el=document)=>Array.from(el.querySelectorAll(s));
+const fmt = (t)=>{
+  if(!isFinite(t)||t<0) t = 0;
+  const h=Math.floor(t/3600), m=Math.floor((t%3600)/60), s=Math.floor(t%60);
+  return [h,m,s].map(n=>String(n).padStart(2,'0')).join(':');
+};
+const fmtSrt = (t)=>{
+  const h=Math.floor(t/3600), m=Math.floor((t%3600)/60), s=Math.floor(t%60);
+  const ms=Math.floor((t%1)*1000);
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')},${String(ms).padStart(3,'0')}`;
+}
+
+// ===== IndexedDB (simple key-value) =====
+const DB_NAME = 'subsDB_v1';
+const STORE = 'kv';
+let db;
+function openDB(){
+  return new Promise((res,rej)=>{
+    const req = indexedDB.open(DB_NAME,1);
+    req.onupgradeneeded = ()=>{
+      const db=req.result; db.createObjectStore(STORE);
+    };
+    req.onsuccess = ()=>{db=req.result; res(db)};
+    req.onerror = ()=>rej(req.error);
+  });
+}
+function idbGet(key){
+  return new Promise((res,rej)=>{const tx=db.transaction(STORE,'readonly'), st=tx.objectStore(STORE), r=st.get(key); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error);});
+}
+function idbSet(key,val){
+  return new Promise((res,rej)=>{const tx=db.transaction(STORE,'readwrite'), st=tx.objectStore(STORE), r=st.put(val,key); r.onsuccess=()=>res(); r.onerror=()=>rej(r.error);});
+}
+
+// ===== State =====
+let state = {
+  subs: [], // {id, start, end|null, text}
+  selectedId: null,
+  lastVideoName: null
+};
+function save(){ idbSet('appState', JSON.stringify(state)); }
+async function restore(){
+  const raw = await idbGet('appState');
+  if(raw){ try{ state = JSON.parse(raw) }catch(e){} }
+}
+
+// ===== UI Refs =====
+const player = $('#player');
+const videoFile = $('#videoFile');
+const cur = $('#cur');
+const dur = $('#dur');
+const textInput = $('#text');
+const listEl = $('#list');
+const emptyEl = $('#empty');
+const selInfo = $('#selInfo');
+
+// ===== Rendering =====
+function render(){
+  listEl.innerHTML='';
+  if(state.subs.length===0){ emptyEl.style.display='block'; }
+  else { emptyEl.style.display='none'; }
+  state.subs.sort((a,b)=> a.start - b.start); // keep ordered by start
+  state.subs.forEach((it, i)=>{
+    const el = document.createElement('div');
+    el.className = 'item'+(state.selectedId===it.id?' selected':'');
+    el.dataset.id = it.id;
+    const start = fmt(it.start);
+    const end = (it.end==null? 'X:XX:XX' : fmt(it.end));
+    el.innerHTML = `
+      <div class="idx">${i+1}</div>
+      <div class="times">${start} ～ ${end}</div>
+      <div class="text" contenteditable="false">${escapeHtml(it.text||'')}</div>
+      <div class="pill">ID:${it.id.slice(0,4)}</div>
+    `;
+    // interactions
+    el.addEventListener('click', ()=>{ select(it.id); if(player.duration) player.currentTime = it.start; });
+    el.addEventListener('dblclick', ()=>{
+      const t = el.querySelector('.text');
+      t.setAttribute('contenteditable', 'true'); t.focus();
+      placeCaretAtEnd(t);
+    });
+    el.addEventListener('focusout', (e)=>{
+      const t = el.querySelector('.text');
+      if(t.getAttribute('contenteditable')==='true'){
+        t.setAttribute('contenteditable','false');
+        updateText(it.id, t.innerText.trim());
+      }
+    });
+    listEl.appendChild(el);
+  });
+  const sel = state.subs.find(s=>s.id===state.selectedId);
+  selInfo.textContent = sel ? `${fmt(sel.start)}～${sel.end?fmt(sel.end):'X:XX:XX'}` : '—';
+  save();
+}
+function escapeHtml(s){ return s.replace(/[&<>"']/g, m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m])); }
+function placeCaretAtEnd(el){
+  const r=document.createRange(); r.selectNodeContents(el); r.collapse(false);
+  const sel=window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+}
+
+function select(id){ state.selectedId = id; render(); }
+function updateText(id, newText){ const it=state.subs.find(x=>x.id===id); if(it){ it.text=newText; render(); } }
+
+// ===== Actions =====
+function insertNow(){
+  const t = player.currentTime || 0;
+  const txt = textInput.value.trim();
+  const id = crypto.randomUUID();
+  state.subs.push({id, start:t, end:null, text:txt});
+  state.selectedId = id;
+  textInput.value='';
+  render();
+}
+function setOut(){
+  if(!state.selectedId) return alert('リストから項目を選択してください');
+  const sel = state.subs.find(s=>s.id===state.selectedId);
+  const t = player.currentTime || 0;
+  if(t <= sel.start){ if(!confirm('現在時刻が開始より前です。開始+0.5秒として設定しますか？')) return; sel.end = sel.start + .5; }
+  else sel.end = t;
+  render();
+}
+function move(delta){
+  if(!state.selectedId) return;
+  const idx = state.subs.findIndex(s=>s.id===state.selectedId);
+  const ni = Math.max(0, Math.min(state.subs.length-1, idx+delta));
+  if(idx===ni) return;
+  const [it] = state.subs.splice(idx,1); state.subs.splice(ni,0,it); render();
+}
+function removeSelected(){
+  if(!state.selectedId) return;
+  if(!confirm('選択中の字幕を削除しますか？')) return;
+  state.subs = state.subs.filter(s=>s.id!==state.selectedId);
+  state.selectedId = null; render();
+}
+function clearAll(){
+  if(!confirm('すべての字幕を削除します。よろしいですか？')) return;
+  state.subs = []; state.selectedId = null; render();
+}
+
+// ===== Export =====
+function exportSRT(){
+  if(state.subs.length===0) return alert('エクスポートする項目がありません');
+  const lines=[];
+  const subs = [...state.subs].sort((a,b)=>a.start-b.start);
+  subs.forEach((s,i)=>{
+    const start = fmtSrt(s.start);
+    const end = fmtSrt( s.end==null ? (i<subs.length-1 ? Math.max(subs[i+1].start-0.05, s.start+0.5) : (s.start+2)) : s.end );
+    const text = (s.text||'').trim() || `字幕 ${i+1}`;
+    lines.push(String(i+1));
+    lines.push(`${start} --> ${end}`);
+    lines.push(text);
+    lines.push('');
+  });
+  const blob = new Blob([lines.join('\n')], {type:'text/plain;charset=utf-8'});
+  triggerDownload(blob, suggestFileName('.srt'));
+}
+function exportVTT(){
+  if(state.subs.length===0) return alert('エクスポートする項目がありません');
+  const lines=['WEBVTT',''];
+  const subs = [...state.subs].sort((a,b)=>a.start-b.start);
+  subs.forEach((s)=>{
+    const start = fmtVtt(s.start);
+    const end = fmtVtt( s.end==null ? (s.start+2) : s.end );
+    const text = (s.text||'').trim();
+    lines.push(`${start} --> ${end}`);
+    lines.push(text);
+    lines.push('');
+  });
+  const blob = new Blob([lines.join('\n')], {type:'text/vtt;charset=utf-8'});
+  triggerDownload(blob, suggestFileName('.vtt'));
+}
+function fmtVtt(t){
+  const h=Math.floor(t/3600), m=Math.floor((t%3600)/60), s=Math.floor(t%60);
+  const ms=Math.floor((t%1)*1000);
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(ms).padStart(3,'0')}`;
+}
+function triggerDownload(blob, name){
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();}, 0);
+}
+function suggestFileName(ext){
+  const base = state.lastVideoName ? state.lastVideoName.replace(/\.[^.]+$/,'') : 'subtitles';
+  const d=new Date();
+  const stamp = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  return `${base}_${stamp}${ext}`;
+}
+
+// ===== Wire events =====
+$('#markIn').addEventListener('click', insertNow);
+$('#markOut').addEventListener('click', setOut);
+$('#up').addEventListener('click', ()=>move(-1));
+$('#down').addEventListener('click', ()=>move(1));
+$('#delete').addEventListener('click', removeSelected);
+$('#clearAll').addEventListener('click', clearAll);
+$('#exportSRT').addEventListener('click', exportSRT);
+$('#exportVTT').addEventListener('click', exportVTT);
+
+$('#playPause').addEventListener('click', ()=>{
+  if(player.paused) player.play(); else player.pause();
+});
+$('#back1').addEventListener('click', ()=>{ player.currentTime=Math.max(0,(player.currentTime||0)-1); });
+$('#fwd1').addEventListener('click', ()=>{ player.currentTime=(player.currentTime||0)+1; });
+
+videoFile.addEventListener('change', (e)=>{
+  const f=e.target.files?.[0];
+  if(!f) return;
+  state.lastVideoName=f.name; save();
+  player.src = URL.createObjectURL(f);
+  player.onloadedmetadata = ()=>{ dur.textContent = fmt(player.duration||0); };
+});
+
+player.addEventListener('timeupdate', ()=>{
+  cur.textContent = fmt(player.currentTime||0);
+});
+player.addEventListener('loadedmetadata', ()=>{ dur.textContent = fmt(player.duration||0); });
+
+// Enter inserts
+textInput.addEventListener('keydown', (e)=>{
+  if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); insertNow(); }
+});
+
+// ===== Init =====
+(async function(){
+  await openDB();
+  await restore();
+  render();
+})();
+</script>
+</body>
+</html>

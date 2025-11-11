@@ -109,6 +109,7 @@
             </div>
             <div class="row">
               <button id="markIn" class="btn-brand">挿入（開始）</button>
+              <button id="markStart" title="選択中の字幕の先頭を現在時刻に" class="btn-ghost">先頭を設定</button>
               <button id="markOut" title="選択中の字幕の末尾を現在時刻に" class="btn-ghost">末尾を設定</button>
             </div>
           </div>
@@ -199,7 +200,7 @@ const dur = $('#dur');
 const textInput = $('#text');
 const listEl = $('#list');
 const emptyEl = $('#empty');
-const selInfo = $('#selInfo');
+const selInfo = $('#selInfo');4
 
 // ===== Rendering =====
 function render(){
@@ -264,6 +265,17 @@ function setOut(){
   const t = player.currentTime || 0;
   if(t <= sel.start){ if(!confirm('現在時刻が開始より前です。開始+0.5秒として設定しますか？')) return; sel.end = sel.start + .5; }
   else sel.end = t;
+  render();
+}
+function setStart(){
+  if(!state.selectedId) return alert('リストから項目を選択してください');
+  const sel = state.subs.find(s=>s.id===state.selectedId);
+  const t = player.currentTime || 0;
+  if(sel.end != null && t >= sel.end){
+    if(!confirm('現在時刻が末尾以降です。末尾を削除して開始時刻を更新しますか？')) return;
+    sel.end = null;
+  }
+  sel.start = t;
   render();
 }
 function move(delta){
@@ -334,6 +346,7 @@ function suggestFileName(ext){
 // ===== Wire events =====
 $('#markIn').addEventListener('click', insertNow);
 $('#markOut').addEventListener('click', setOut);
+$('#markStart').addEventListener('click', setStart);
 $('#up').addEventListener('click', ()=>move(-1));
 $('#down').addEventListener('click', ()=>move(1));
 $('#delete').addEventListener('click', removeSelected);
@@ -373,4 +386,5 @@ textInput.addEventListener('keydown', (e)=>{
 })();
 </script>
 </body>
+
 </html>

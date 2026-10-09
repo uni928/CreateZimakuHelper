@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="theme-color" content="#0b1020" />
+<title>字幕入れ｜動画字幕エディター</title>
+<style>
+@layer base {
+  /* Refresh the editor with clearer hierarchy and responsive controls. */
+  :root{color-scheme:dark;--bg:#0b1020;--panel:#121a2d;--raised:#19253b;--text:#f2f5fb;--muted:#a6b2c7;--brand:#9a8cff;--mint:#55dfc7;--danger:#ff727c;--border:rgba(184,199,226,.16);--shadow:0 18px 50px rgba(0,0,0,.24);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP",sans-serif}
+  *{box-sizing:border-box} body{min-height:100vh;margin:0;color:var(--text);background:radial-gradient(900px 540px at 8% -8%,rgba(99,86,190,.24),transparent 65%),radial-gradient(700px 480px at 100% 0%,rgba(42,157,147,.12),transparent 60%),var(--bg)}
+  .wrap{width:min(1380px,100%);margin:0 auto;padding:34px 24px 48px} header{display:flex;align-items:center;gap:16px;margin:0 0 24px}.logo{flex:0 0 52px;width:52px;height:52px;border-radius:17px;display:grid;place-items:center;font-size:16px;font-weight:900;letter-spacing:.06em;color:#11172a;background:linear-gradient(140deg,#b0a5ff,#55e3c9);box-shadow:0 9px 28px #111a}.h1{font-size:clamp(21px,3vw,30px);font-weight:800;letter-spacing:-.035em;line-height:1.25}.sub{margin-top:6px;color:var(--muted);font-size:13px;line-height:1.65}
+  .grid{display:grid;grid-template-columns:minmax(0,1.18fr) minmax(340px,.82fr);gap:18px;align-items:start}.panel{min-width:0;overflow:hidden;border:1px solid var(--border);border-radius:20px;background:rgba(18,26,45,.92);box-shadow:var(--shadow)}.panel .hd{min-height:62px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;border-bottom:1px solid var(--border);background:rgba(255,255,255,.018)}.panel .hd h2{margin:0;font-size:12px;font-weight:800;letter-spacing:.14em;color:#bdc8dc}.panel .bd{padding:18px}.panel .ft{display:flex;gap:9px;flex-wrap:wrap;padding:12px 18px 16px}.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.grow{flex:1 1 180px;min-width:0}label{color:var(--muted);font-size:12px;font-weight:650}
+  input[type="file"],input[type="text"],textarea,select{width:100%;min-height:44px;padding:10px 13px;color:var(--text);border:1px solid var(--border);border-radius:12px;outline:none;background:#0e1628;font:inherit}input[type="file"]{padding:7px;color:var(--muted)}input[type="file"]::file-selector-button{margin-right:10px;padding:7px 10px;color:var(--text);border:1px solid var(--border);border-radius:8px;background:var(--raised)}input[type="text"]::placeholder,textarea::placeholder{color:#8290a8}input:focus-visible,textarea:focus-visible,select:focus-visible,button:focus-visible,.item:focus-visible{outline:3px solid rgba(139,124,255,.55);outline-offset:2px}
+  button{appearance:none;min-height:42px;padding:9px 13px;color:var(--text);border:1px solid var(--border);border-radius:11px;background:#1a263d;cursor:pointer;font:inherit;font-size:13px;font-weight:750;transition:transform .15s ease,border-color .15s ease,background .15s ease}button:hover{transform:translateY(-1px);border-color:rgba(190,205,232,.4);background:#22314c}button:active{transform:translateY(0)}.btn-brand{color:#101629;border-color:transparent;background:linear-gradient(130deg,#a89aff,#62e0ca)}.btn-brand:hover{border-color:transparent;background:linear-gradient(130deg,#b7acff,#7cebd8)}.btn-danger{color:#ffd9dc;border-color:rgba(255,114,124,.28);background:rgba(181,53,66,.2)}.btn-danger:hover{background:rgba(181,53,66,.34)}.btn-ghost{background:rgba(255,255,255,.035)}
+  .chip,.pill{display:inline-flex;align-items:center;gap:7px;white-space:nowrap;font-variant-numeric:tabular-nums;border:1px solid var(--border);border-radius:999px;background:rgba(255,255,255,.04)}.chip{padding:7px 11px;color:var(--muted);font-size:12px}.chip b{color:var(--text);font-size:14px}video{display:block;width:100%;max-height:66vh;min-height:180px;border-radius:14px;background:#050810;object-fit:contain}.timebar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;color:#d3d9e8;font-variant-numeric:tabular-nums}.pill{padding:5px 9px;color:#cbd5e7;font-size:11px}.pill b{color:#f1f4fa}
+  .list{display:grid;gap:8px;max-height:58vh;overflow:auto;padding:2px 4px 2px 2px;scrollbar-color:#394763 transparent}.item{display:flex;min-width:0;align-items:center;gap:10px;padding:10px 11px;border:1px solid var(--border);border-radius:13px;background:rgba(255,255,255,.028);cursor:pointer;transition:background .15s,border-color .15s}.item:hover{border-color:rgba(190,205,232,.36);background:rgba(255,255,255,.055)}.item.selected{border-color:rgba(139,124,255,.75);background:linear-gradient(100deg,rgba(139,124,255,.17),rgba(71,216,193,.045));box-shadow:inset 3px 0 var(--brand)}.item .idx{flex:0 0 29px;width:29px;height:29px;display:grid;place-items:center;color:#dedaff;border:1px solid var(--border);border-radius:9px;background:rgba(139,124,255,.12);font-size:12px;font-weight:800}.times{flex:0 0 auto;color:#dce5f5;font-size:12px;font-weight:750;font-variant-numeric:tabular-nums}.text{flex:1 1 auto;min-width:36px;overflow-wrap:anywhere;line-height:1.5}.text[contenteditable="true"]{min-height:28px;outline:1px solid rgba(139,124,255,.5);border-radius:4px}.item .pill{flex:0 0 auto;color:#aebbd0;font-size:10px}.empty{padding:28px 16px;color:var(--muted);text-align:center;line-height:1.7}.tips{margin:16px 4px 0;color:var(--muted);font-size:12px;line-height:1.7}
+  @media(max-width:960px){.grid{grid-template-columns:1fr}.list{max-height:48vh}}
+  @media(max-width:600px){.wrap{padding:20px 12px 32px}header{align-items:flex-start;gap:12px;margin-bottom:18px}.logo{flex-basis:42px;width:42px;height:42px;border-radius:14px}.sub{font-size:12px}.panel{border-radius:16px}.panel .hd{min-height:54px;padding:12px 14px}.panel .bd{padding:14px}.panel .ft{padding:10px 14px 14px}#videoPanel .bd>.row:first-child{align-items:stretch}#videoPanel .bd>.row:first-child label,#videoPanel .bd>.row:first-child input{flex-basis:100%}#videoPanel .bd>.row:last-child{align-items:stretch}#videoPanel .bd>.row:last-child .timebar{width:100%}#videoPanel .bd>.row:last-child>.row{display:grid;width:100%;grid-template-columns:1fr 1fr}#markIn{grid-column:1/-1}.panel:has(#exportSRT) .hd{align-items:flex-start;flex-direction:column}.panel:has(#exportSRT) .hd .row{width:100%}.panel:has(#exportSRT) .hd button{flex:1 1 auto}.item{flex-wrap:wrap}.times{font-size:11px}.item .text{flex-basis:calc(100% - 48px);order:3;margin-left:39px}.item .pill{margin-left:auto}video{min-height:150px;max-height:48vh}}
+  @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto;transition-duration:.01ms}}
+}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="logo">SS</div>
+      <div>
+        <div class="h1">字幕入れ（Single HTML・IndexedDB 自動保存）</div>
+        <div class="sub">動画を再生しながら、ワンクリックで <b>開始</b> と <b>末尾</b> を記録。ページを閉じても自動で保存・復元されます。</div>
+      </div>
+    </header>
+
+    <div class="grid">
+      <!-- Left: Video -->
+      <section class="panel" id="videoPanel">
+        <div class="hd">
+          <h2>Video</h2>
+          <div class="chip"><span>現在時刻</span><b id="cur">00:00:00</b></div>
+        </div>
+        <div class="bd">
+          <div class="row" style="margin-bottom:10px">
+            <label>動画ファイルを選択</label>
+            <input class="grow" type="file" id="videoFile" accept="video/*">
+            <button class="btn-ghost" id="playPause">▶ 再生</button>
+            <button class="btn-ghost" id="back1">⏪ -1s</button>
+            <button class="btn-ghost" id="fwd1">⏩ +1s</button>
+          </div>
+          <video id="player" controls crossorigin="anonymous"></video>
+          <div class="row" style="margin-top:10px; justify-content:space-between">
+            <div class="timebar">
+              <span class="pill">長さ <b id="dur">--:--:--</b></span>
+              <span class="pill">選択 <b id="selInfo">—</b></span>
+            </div>
+            <div class="row">
+              <button id="markIn" class="btn-brand">挿入（開始）</button>
+              <button id="markStart" title="選択中の字幕の先頭を現在時刻に" class="btn-ghost">開始を設定</button>
+              <button id="markOut" title="選択中の字幕の末尾を現在時刻に" class="btn-ghost">末尾を設定</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right: Subtitle list -->
+      <section class="panel">
+        <div class="hd">
+          <h2>Subtitles</h2>
+          <div class="row">
+            <button id="exportSRT" class="btn-ghost">.srt をダウンロード</button>
+            <button id="exportVTT" class="btn-ghost">.vtt をダウンロード</button>
+            <button id="clearAll" class="btn-danger">全消去</button>
+          </div>
+        </div>
+        <div class="bd">
+          <div class="row" style="margin-bottom:10px">
+            <input id="text" class="grow" type="text" placeholder="ここに字幕テキストを入力して『挿入（開始）』を押す" />
+          </div>
+          <div id="list" class="list" aria-live="polite"></div>
+          <div id="empty" class="empty">まだ項目がありません。動画を再生し、入れたいタイミングで『挿入（開始）』を押してください。</div>
+        </div>
+        <div class="ft">
+          <button id="up">↑ 上へ</button>
+          <button id="down">↓ 下へ</button>
+          <button id="delete" class="btn-danger">削除</button>
+        </div>
+      </section>
+    </div>
+
+    <p class="tips">Tips: 項目をクリックすると選択・シークします。ダブルクリックで字幕テキストを直接編集できます。未設定の末尾は <b>X:XX:XX</b> と表示されます。</p>
+  </div>
+
+<script>
+// ===== Utilities =====
+const $ = (s, el=document)=>el.querySelector(s);
+const $$ = (s, el=document)=>Array.from(el.querySelectorAll(s));
+const fmt = (t)=>{
+  if(!isFinite(t)||t<0) t = 0;
+  const h=Math.floor(t/3600), m=Math.floor((t%3600)/60), s=Math.floor(t%60);
+  return [h,m,s].map(n=>String(n).padStart(2,'0')).join(':');
+};
+const fmtSrt = (t)=>{
+  const h=Math.floor(t/3600), m=Math.floor((t%3600)/60), s=Math.floor(t%60);
+  const ms=Math.floor((t%1)*1000);
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')},${String(ms).padStart(3,'0')}`;
+}
+
+// ===== IndexedDB (simple key-value) =====
+const DB_NAME = 'subsDB_v1';
+const STORE = 'kv';
+let db;
+function openDB(){
+  return new Promise((res,rej)=>{
+    const req = indexedDB.open(DB_NAME,1);
+    req.onupgradeneeded = ()=>{
+      const db=req.result; db.createObjectStore(STORE);
+    };
+    req.onsuccess = ()=>{db=req.result; res(db)};
+    req.onerror = ()=>rej(req.error);
+  });
+}
+function idbGet(key){
+  return new Promise((res,rej)=>{const tx=db.transaction(STORE,'readonly'), st=tx.objectStore(STORE), r=st.get(key); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error);});
+}
+function idbSet(key,val){
+  return new Promise((res,rej)=>{const tx=db.transaction(STORE,'readwrite'), st=tx.objectStore(STORE), r=st.put(val,key); r.onsuccess=()=>res(); r.onerror=()=>rej(r.error);});
+}
+
+// ===== State =====
+let state = {
+  subs: [], // {id, start, end|null, text}
+  selectedId: null,
+  lastVideoName: null
+};
+function save(){ idbSet('appState', JSON.stringify(state)); }
+async function restore(){
+  const raw = await idbGet('appState');
+  if(raw){ try{ state = JSON.parse(raw) }catch(e){} }
+}
+
+// ===== UI Refs =====
+const player = $('#player');
+const videoFile = $('#videoFile');
+const cur = $('#cur');
+const dur = $('#dur');
+const textInput = $('#text');
+const listEl = $('#list');
+const emptyEl = $('#empty');
+const selInfo = $('#selInfo');
+
+// ===== Rendering =====
+function render(){
+  listEl.innerHTML='';
+  if(state.subs.length===0){ emptyEl.style.display='block'; }
+  else { emptyEl.style.display='none'; }
+  state.subs.forEach((it, i)=>{
+    const el = document.createElement('div');
+    el.className = 'item'+(state.selectedId===it.id?' selected':'');
+    el.tabIndex = 0;
+    el.setAttribute('role', 'button');
+    el.dataset.id = it.id;
+    const start = fmt(it.start);
+    const end = (it.end==null? 'X:XX:XX' : fmt(it.end));
+    el.innerHTML = `
+      <div class="idx">${i+1}</div>
+      <div class="times">${start} ～ ${end}</div>
+      <div class="text" contenteditable="false">${escapeHtml(it.text||'')}</div>
+      <div class="pill">ID:${it.id.slice(0,4)}</div>
+    `;
+    // interactions
+    el.addEventListener('click', ()=>{ select(it.id); if(player.duration) player.currentTime = it.start; });
+    el.addEventListener('dblclick', ()=>{
+      const t = el.querySelector('.text');
+      t.setAttribute('contenteditable', 'true'); t.focus();
+      placeCaretAtEnd(t);
+    });
+    el.addEventListener('focusout', (e)=>{
+      const t = el.querySelector('.text');
+      if(t.getAttribute('contenteditable')==='true'){
+        t.setAttribute('contenteditable','false');
+        updateText(it.id, t.innerText.trim());
+      }
+    });
+    listEl.appendChild(el);
+  });
+  const sel = state.subs.find(s=>s.id===state.selectedId);
+  selInfo.textContent = sel ? `${fmt(sel.start)}～${sel.end?fmt(sel.end):'X:XX:XX'}` : '—';
+  save();
+}
+function escapeHtml(s){ return s.replace(/[&<>"']/g, m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m])); }
+function placeCaretAtEnd(el){
+  const r=document.createRange(); r.selectNodeContents(el); r.collapse(false);
+  const sel=window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+}
+
+function select(id){ state.selectedId = id; render(); }
+function updateText(id, newText){ const it=state.subs.find(x=>x.id===id); if(it){ it.text=newText; render(); } }
+
+// ===== Actions =====
+function insertNow(){
+  const t = player.currentTime || 0;
+  const txt = textInput.value.trim();
+  const id = crypto.randomUUID();
+  state.subs.push({id, start:t, end:null, text:txt});
+  state.selectedId = id;
+  textInput.value='';
+  render();
+}
+function setOut(){
+  if(!state.selectedId) return alert('リストから項目を選択してください');
+  const sel = state.subs.find(s=>s.id===state.selectedId);
+  const t = player.currentTime || 0;
+  if(t <= sel.start){ if(!confirm('現在時刻が開始より前です。開始+0.5秒として設定しますか？')) return; sel.end = sel.start + .5; }
+  else sel.end = t;
+  render();
+}
+function setStart(){
+  if(!state.selectedId) return alert('リストから項目を選択してください');
+  const sel = state.subs.find(s=>s.id===state.selectedId);
+  const t = player.currentTime || 0;
+  if(sel.end != null && t >= sel.end){
+    if(!confirm('現在時刻が末尾以降です。末尾を削除して開始時刻を更新しますか？')) return;
+    sel.end = null;
+  }
+  sel.start = t;
+  render();
+}
+function move(delta){
+  if(!state.selectedId) return;
+  const idx = state.subs.findIndex(s=>s.id===state.selectedId);
+  const ni = Math.max(0, Math.min(state.subs.length-1, idx+delta));
+  if(idx===ni) return;
+  const [it] = state.subs.splice(idx,1); state.subs.splice(ni,0,it); render();
+}
+function removeSelected(){
+  if(!state.selectedId) return;
+  if(!confirm('選択中の字幕を削除しますか？')) return;
+  state.subs = state.subs.filter(s=>s.id!==state.selectedId);
+  state.selectedId = null; render();
+}
+function clearAll(){
+  if(!confirm('すべての字幕を削除します。よろしいですか？')) return;
+  state.subs = []; state.selectedId = null; render();
+}
+
+// ===== Export =====
+function exportSRT(){
+  if(state.subs.length===0) return alert('エクスポートする項目がありません');
+  const lines=[];
+  const subs = [...state.subs].sort((a,b)=>a.start-b.start);
+  subs.forEach((s,i)=>{
+    const start = fmtSrt(s.start);
+    const end = fmtSrt( s.end==null ? (i<subs.length-1 ? Math.max(subs[i+1].start-0.05, s.start+0.5) : (s.start+2)) : s.end );
+    const text = (s.text||'').trim() || `字幕 ${i+1}`;
+    lines.push(String(i+1));
+    lines.push(`${start} --> ${end}`);
+    lines.push(text);
+    lines.push('');
+  });
+  const blob = new Blob([lines.join('\n')], {type:'text/plain;charset=utf-8'});
+  triggerDownload(blob, suggestFileName('.srt'));
+}
+function exportVTT(){
+  if(state.subs.length===0) return alert('エクスポートする項目がありません');
+  const lines=['WEBVTT',''];
+  const subs = [...state.subs].sort((a,b)=>a.start-b.start);
+  subs.forEach((s)=>{
+    const start = fmtVtt(s.start);
+    const end = fmtVtt( s.end==null ? (s.start+2) : s.end );
+    const text = (s.text||'').trim();
+    lines.push(`${start} --> ${end}`);
+    lines.push(text);
+    lines.push('');
+  });
+  const blob = new Blob([lines.join('\n')], {type:'text/vtt;charset=utf-8'});
+  triggerDownload(blob, suggestFileName('.vtt'));
+}
+function fmtVtt(t){
+  const h=Math.floor(t/3600), m=Math.floor((t%3600)/60), s=Math.floor(t%60);
+  const ms=Math.floor((t%1)*1000);
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(ms).padStart(3,'0')}`;
+}
+function triggerDownload(blob, name){
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();}, 0);
+}
+function suggestFileName(ext){
+  const base = state.lastVideoName ? state.lastVideoName.replace(/\.[^.]+$/,'') : 'subtitles';
+  const d=new Date();
+  const stamp = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  return `${base}_${stamp}${ext}`;
+}
+
+// ===== Wire events =====
+$('#markIn').addEventListener('click', insertNow);
+$('#markOut').addEventListener('click', setOut);
+$('#markStart').addEventListener('click', setStart);
+$('#up').addEventListener('click', ()=>move(-1));
+$('#down').addEventListener('click', ()=>move(1));
+$('#delete').addEventListener('click', removeSelected);
+$('#clearAll').addEventListener('click', clearAll);
+$('#exportSRT').addEventListener('click', exportSRT);
+$('#exportVTT').addEventListener('click', exportVTT);
+
+$('#playPause').addEventListener('click', ()=>{
+  if(player.paused) player.play(); else player.pause();
+});
+$('#back1').addEventListener('click', ()=>{ player.currentTime=Math.max(0,(player.currentTime||0)-1); });
+$('#fwd1').addEventListener('click', ()=>{ player.currentTime=(player.currentTime||0)+1; });
+
+videoFile.addEventListener('change', (e)=>{
+  const f=e.target.files?.[0];
+  if(!f) return;
+  state.lastVideoName=f.name; save();
+  player.src = URL.createObjectURL(f);
+  player.onloadedmetadata = ()=>{ dur.textContent = fmt(player.duration||0); };
+});
+
+player.addEventListener('timeupdate', ()=>{
+  cur.textContent = fmt(player.currentTime||0);
+});
+player.addEventListener('loadedmetadata', ()=>{ dur.textContent = fmt(player.duration||0); });
+
+// Enter inserts
+textInput.addEventListener('keydown', (e)=>{
+  if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); insertNow(); }
+});
+
+// ===== Init =====
+(async function(){
+  await openDB();
+  await restore();
+  render();
+})();
+</script>
+</body>
+
+</html>
